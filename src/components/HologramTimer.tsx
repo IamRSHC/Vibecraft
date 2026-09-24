@@ -9,27 +9,36 @@ interface Props {
 }
 
 const box: CSSProperties = {
-  minWidth: 58,
-  padding: '8px 4px 6px',
+  minWidth: 52,
+  padding: '7px 5px 5px',
   borderRadius: 4,
-  background: 'rgba(11,14,31,0.55)',
-  border: '1px solid rgba(168,139,255,0.55)',
+  background: 'rgba(12,26,48,0.38)',
+  border: '1px solid rgba(125,210,255,0.5)',
   textAlign: 'center',
 }
 const digit: CSSProperties = {
   fontFamily: '"Press Start 2P", monospace',
-  fontSize: 26,
-  color: '#CFC4FF',
-  textShadow: '0 0 10px rgba(124,77,255,0.9)',
+  fontSize: 24,
+  color: '#cdeeff',
+  textShadow: '0 0 8px rgba(110,200,255,0.95), 0 0 2px rgba(200,240,255,0.9)',
   lineHeight: 1.2,
 }
+const colon: CSSProperties = { ...digit, fontSize: 20, opacity: 0.85 }
 const unit: CSSProperties = {
   display: 'block',
-  marginTop: 6,
-  fontSize: 9,
+  marginTop: 5,
+  fontSize: 8.5,
   letterSpacing: 1,
-  color: '#9a8fd6',
+  color: '#84b9e2',
 }
+const overlay: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  borderRadius: 10,
+  pointerEvents: 'none',
+  mixBlendMode: 'screen',
+}
+const textRow: CSSProperties = { position: 'relative', zIndex: 2 }
 
 export default function HologramTimer({ view, label, live }: Props) {
   const paused = view.status === 'paused'
@@ -49,39 +58,65 @@ export default function HologramTimer({ view, label, live }: Props) {
       }}
       style={{
         position: 'relative',
-        padding: '16px 18px 14px',
+        width: 'max-content',
+        padding: '14px 16px 12px',
         borderRadius: 10,
-        background:
-          'linear-gradient(180deg, rgba(124,77,255,0.16), rgba(124,77,255,0.05))',
-        border: '1px solid rgba(168,139,255,0.6)',
-        boxShadow: '0 0 30px rgba(124,77,255,0.35), inset 0 0 22px rgba(124,77,255,0.12)',
-        backdropFilter: 'blur(3px)',
-        WebkitBackdropFilter: 'blur(3px)',
+        // translucent, cyan-tinted glass so the scene shows through (holographic)
+        background: 'linear-gradient(180deg, rgba(90,170,255,0.10), rgba(124,77,255,0.05))',
+        border: '1px solid rgba(125,210,255,0.55)',
+        boxShadow:
+          '0 0 26px rgba(90,180,255,0.35), 0 0 60px rgba(124,77,255,0.22), inset 0 0 22px rgba(120,200,255,0.14)',
+        backdropFilter: 'blur(2px)',
+        WebkitBackdropFilter: 'blur(2px)',
       }}
     >
-      {/* scanlines */}
+      {/* moving scanlines */}
+      <div
+        aria-hidden
+        className="holo-scan"
+        style={{
+          ...overlay,
+          background:
+            'repeating-linear-gradient(0deg, rgba(150,220,255,0.13) 0 1px, transparent 1px 4px)',
+        }}
+      />
+      {/* flickering holographic sheen */}
+      <div
+        aria-hidden
+        className="holo-flicker"
+        style={{
+          ...overlay,
+          background: 'linear-gradient(180deg, rgba(120,200,255,0.12), rgba(124,77,255,0.04))',
+        }}
+      />
+      {/* projector glow at the base */}
       <div
         aria-hidden
         style={{
           position: 'absolute',
-          inset: 0,
-          borderRadius: 10,
+          left: '15%',
+          right: '15%',
+          bottom: -7,
+          height: 12,
+          borderRadius: '50%',
+          background: 'radial-gradient(ellipse at center, rgba(120,205,255,0.55), transparent 72%)',
+          filter: 'blur(5px)',
           pointerEvents: 'none',
-          background:
-            'repeating-linear-gradient(0deg, rgba(168,139,255,0.10) 0 1px, transparent 1px 4px)',
-          mixBlendMode: 'screen',
         }}
       />
+
+      {/* label */}
       <div
         style={{
+          ...textRow,
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          marginBottom: 10,
-          fontSize: 11,
-          letterSpacing: 1.5,
+          gap: 7,
+          marginBottom: 9,
+          fontSize: 10.5,
+          letterSpacing: 1.3,
           textTransform: 'uppercase',
-          color: '#A88BFF',
+          color: '#9fd8ff',
           fontWeight: 700,
         }}
       >
@@ -95,22 +130,20 @@ export default function HologramTimer({ view, label, live }: Props) {
           }}
         />
         {label}
-        {!live && (
-          <span style={{ fontSize: 9, opacity: 0.7, letterSpacing: 0.5 }}>· preview</span>
-        )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* digits */}
+      <div style={{ ...textRow, display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={box}>
           <span style={digit}>{pad(view.h)}</span>
           <span style={unit}>HRS</span>
         </div>
-        <span style={{ ...digit, fontSize: 22 }}>:</span>
+        <span style={colon}>:</span>
         <div style={box}>
           <span style={digit}>{pad(view.m)}</span>
           <span style={unit}>MIN</span>
         </div>
-        <span style={{ ...digit, fontSize: 22 }}>:</span>
+        <span style={colon}>:</span>
         <div style={box}>
           <span style={digit}>{pad(view.s)}</span>
           <span style={unit}>SEC</span>

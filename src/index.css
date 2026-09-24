@@ -155,6 +155,18 @@ header.site{
   .hero-panel{max-width:none;}
 }
 
+/* ---------- hologram timer effects ---------- */
+@keyframes holoScan{ from{background-position:0 0;} to{background-position:0 8px;} }
+@keyframes holoFlicker{
+  0%,100%{opacity:.55;} 45%{opacity:.85;}
+  91%{opacity:.5;} 92%{opacity:.95;} 94%{opacity:.55;} 96%{opacity:.9;}
+}
+.holo-scan{animation:holoScan 0.7s linear infinite;}
+.holo-flicker{animation:holoFlicker 3.6s ease-in-out infinite;}
+@media (prefers-reduced-motion: reduce){
+  .holo-scan,.holo-flicker{animation:none;}
+}
+
 .hero-eyebrow{color:var(--ender-light); font-size:13px; font-weight:700; letter-spacing:1px; margin-bottom:14px;}
 .hero h1{
   font-size:clamp(34px,6vw,58px);
@@ -172,10 +184,12 @@ header.site{
 .hero-ctas{display:flex; flex-wrap:wrap; gap:14px;}
 
 /* ---------- pixel divider ---------- */
+@keyframes dividerScroll{ from{background-position:0 0;} to{background-position:44px 0;} }
 .divider{
   height:26px;
   background-image:repeating-linear-gradient(90deg, var(--grass) 0 22px, var(--grass-dark) 22px 44px);
   border-top:3px solid var(--ink); border-bottom:3px solid var(--ink);
+  animation:dividerScroll 3s linear infinite;
 }
 
 /* ---------- about ---------- */

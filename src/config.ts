@@ -11,3 +11,9 @@ export const DEFAULT_DURATION_MS = 9 * 60 * 60 * 1000 // 9 hours
 export const REGISTER_URL =
   'https://campusquest.incuman.com/events/detail/ddc130a5-ef6e-4b00-9e32-41fb7d7ee4af'
 export const SUBMIT_FORM_URL = 'https://forms.gle/pQiVXgAWmLuuzJx59'
+
+// ---- Google Form placeholders (owner will supply real URLs) ----
+export const REGISTER_FORM_URL = 'REPLACE_ME' // ① team registration (hero + nav)
+export const ROUND1_SUBMIT_URL = 'REPLACE_ME' // ② Round 1 submission
+export const ROUND2_SUBMIT_URL = 'REPLACE_ME' // ③ Round 2 project submission
+export const ROUND3_PPT_URL = 'REPLACE_ME' // ④ Round 3 PPT submission

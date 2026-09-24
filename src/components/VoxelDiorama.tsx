@@ -111,8 +111,7 @@ export default function VoxelDiorama({ view, label, live }: Props) {
           position: 'absolute',
           top: '1%',
           left: '50%',
-          marginLeft: -128,
-          width: 256,
+          transform: 'translateX(-50%)',
           pointerEvents: 'none',
         }}
       >
