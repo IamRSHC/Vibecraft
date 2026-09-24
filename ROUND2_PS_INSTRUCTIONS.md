@@ -6,7 +6,7 @@ qualified team enters the **access code** on the `/round/2` page. The check runs
 
 Data model:
 - **`round2`** — one row holding the `access_code`.
-- **`round2_problems`** — one row **per problem statement** (`position`, `title`, `body`). Add as
+- **`round2_problems`** — one row **per problem statement** (`sort_order`, `title`, `body`). Add as
   many as you like.
 
 > Prereq: Supabase project created and `supabase/schema.sql` run (see `supabase/SETUP.md`).
@@ -39,10 +39,10 @@ update public.round2 set access_code = 'VIBECRAFT-R2' where id = 1;
 ## Step 3 — Add / edit the problem statements
 
 **Add** each problem as a new row (use `$$ … $$` around the body so apostrophes / quotes / line
-breaks are safe). `position` controls display order (lowest first):
+breaks are safe). `sort_order` controls display order (lowest first):
 
 ```sql
-insert into public.round2_problems (position, title, body) values
+insert into public.round2_problems (sort_order, title, body) values
   (1, 'Problem A — <short name>', $$Full text of problem statement A.
 Multiple lines and don't / you're are fine inside these $$ markers.$$),
   (2, 'Problem B — <short name>', $$Full text of problem statement B.$$),
@@ -51,10 +51,10 @@ Multiple lines and don't / you're are fine inside these $$ markers.$$),
 
 **Edit** an existing one (find its `id` first):
 ```sql
-select id, position, title from public.round2_problems order by position;
+select id, sort_order, title from public.round2_problems order by sort_order;
 
 update public.round2_problems
-  set title = 'New title', body = $$New text…$$, position = 1
+  set title = 'New title', body = $$New text…$$, sort_order = 1
   where id = 2;
 ```
 
@@ -78,7 +78,7 @@ select * from public.verify_round2('VIBECRAFT-R2');
 -- a wrong code returns 0 rows:
 select * from public.verify_round2('nope');
 ```
-The first should return your problems (ordered by `position`); the second, nothing.
+The first should return your problems (ordered by `sort_order`); the second, nothing.
 
 ---
 

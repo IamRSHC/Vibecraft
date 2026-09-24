@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 const LS_KEY = 'vibecraft_r2_code'
 
 interface Problem {
-  position: number
+  sort_order: number
   title: string
   body: string
 }
@@ -45,7 +45,7 @@ export default function Round2Gate({ submitUrl }: { submitUrl: string }) {
       setMsg('Something went wrong verifying that code. Try again.')
       return
     }
-    const rows = ((data as Problem[]) ?? []).slice().sort((a, b) => a.position - b.position)
+    const rows = ((data as Problem[]) ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)
     if (rows.length > 0) {
       setProblems(rows)
       setStatus('unlocked')
