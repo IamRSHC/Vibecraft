@@ -272,11 +272,23 @@ header.site{
   padding:clamp(24px,4vw,44px);
 }
 .deck-label{font-family:'Press Start 2P',monospace; font-size:clamp(18px,3.4vw,28px); color:#fff; text-shadow:3px 3px 0 var(--ink); letter-spacing:1px; margin:0 0 12px;}
-.deck-sub{margin:0; font-size:clamp(14px,1.7vw,16px); color:rgba(255,255,255,0.92);}
+.deck-sub{margin:0; font-size:clamp(14px,1.7vw,16px); color:rgba(255,255,255,0.94); text-shadow:0 1px 4px rgba(0,0,0,0.75);}
 .deck-open{margin-top:18px; font-size:13px; font-weight:800; letter-spacing:0.5px; color:var(--torch-light);}
 .deck-dots{display:flex; justify-content:center; gap:10px; margin-top:22px;}
 .deck-dot{width:12px; height:12px; border-radius:50%; border:2px solid var(--parchment-dim); background:transparent; cursor:pointer; padding:0;}
 .deck-dot[aria-current="true"]{background:var(--torch); border-color:var(--torch);}
+
+/* ---------- world-scene pixel-art animations ---------- */
+@keyframes wsDrift{from{transform:translateX(0);} to{transform:translateX(18px);}}
+@keyframes wsFloat{0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);}}
+@keyframes wsFloatSlow{0%,100%{transform:translateY(0);} 50%{transform:translateY(-11px);}}
+@keyframes wsGlow{0%,100%{opacity:1;} 50%{opacity:0.7;}}
+@keyframes wsPulse{0%,100%{opacity:1;} 50%{opacity:0.4;}}
+.ws-drift{animation:wsDrift 9s ease-in-out infinite alternate;}
+.ws-float{animation:wsFloat 5s ease-in-out infinite;}
+.ws-float-slow{animation:wsFloatSlow 7s ease-in-out infinite;}
+.ws-glow{animation:wsGlow 2.6s ease-in-out infinite;}
+.ws-pulse{animation:wsPulse 1.9s ease-in-out infinite;}
 
 /* ---------- round sub-pages ---------- */
 .round-page{position:relative; min-height:100vh; display:flex; flex-direction:column;}

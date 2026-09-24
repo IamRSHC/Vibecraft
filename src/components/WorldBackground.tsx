@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import WorldScene from './WorldScene'
 
 export type World = 'overworld' | 'nether' | 'end'
 
@@ -20,7 +21,9 @@ const ACCENT: Record<World, string> = {
 const GRID =
   'repeating-linear-gradient(0deg, rgba(0,0,0,0.14) 0 1px, transparent 1px 26px),' +
   'repeating-linear-gradient(90deg, rgba(0,0,0,0.14) 0 1px, transparent 1px 26px)'
-const OVERLAY = 'linear-gradient(180deg, rgba(11,14,31,0.52), rgba(11,14,31,0.74))'
+// lighter than before so the world-scene art stays visible; still enough for text contrast
+const OVERLAY =
+  'linear-gradient(180deg, rgba(11,14,31,0.26) 0%, rgba(11,14,31,0.34) 45%, rgba(11,14,31,0.60) 100%)'
 
 /**
  * Stylized world backdrop. `fixed` (default) fills the viewport behind page content;
@@ -32,7 +35,8 @@ export default function WorldBackground({ world, fixed = true }: { world: World;
     <div aria-hidden="true" style={{ ...layer, zIndex: fixed ? -1 : 0, overflow: 'hidden' }}>
       <div style={{ ...layer, background: BASE[world] }} />
       <div style={{ ...layer, background: ACCENT[world] }} />
-      <div style={{ ...layer, background: GRID, opacity: 0.5 }} />
+      <WorldScene world={world} />
+      <div style={{ ...layer, background: GRID, opacity: 0.32 }} />
       <div style={{ ...layer, background: OVERLAY }} />
     </div>
   )
