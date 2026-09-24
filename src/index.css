@@ -312,6 +312,18 @@ header.site{
 .round-back{display:inline-flex; align-items:center; gap:8px; margin-top:26px; color:var(--parchment-dim); text-decoration:none; font-weight:600;}
 .round-back:hover{color:var(--torch-light);}
 
+/* ---------- round 2 gate + problem-statement list ---------- */
+.r2-gate{margin-top:6px;}
+.r2-gate-label{display:block; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--parchment-dim); margin-bottom:8px;}
+.r2-gate-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+.r2-input{flex:1; min-width:200px; padding:12px 14px; border:2px solid var(--ink); border-radius:3px; background:rgba(255,255,255,0.96); color:var(--ink); font-size:15px; letter-spacing:2px; font-family:'Rubik',monospace;}
+.r2-msg{margin-top:10px; font-size:14px; font-weight:700; min-height:20px; color:var(--grass-light);}
+.r2-msg.err{color:#ff9a8f;}
+.r2-unlocked .r2-note{color:var(--grass-light); font-weight:700; margin:0 0 16px;}
+.r2-problem{background:rgba(255,255,255,0.06); border:1px solid rgba(241,233,210,0.18); border-left:4px solid var(--torch); border-radius:4px; padding:18px 20px; margin-bottom:16px;}
+.r2-problem h2{font-size:clamp(16px,2.4vw,20px); margin:0 0 10px; color:var(--parchment); text-shadow:2px 2px 0 var(--ink);}
+.r2-problem p{margin:0; color:var(--parchment-dim); font-size:15px; line-height:1.6;}
+
 .gate{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:6px;}
 .gate label{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; width:100%;}
 .gate input{

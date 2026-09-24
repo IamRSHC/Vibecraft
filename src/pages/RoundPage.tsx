@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import WorldBackground, { type World } from '../components/WorldBackground'
-import { REGISTER_FORM_URL, ROUND1_SUBMIT_URL, ROUND3_PPT_URL } from '../config'
+import Round2Gate from '../components/Round2Gate'
+import { REGISTER_FORM_URL, ROUND1_SUBMIT_URL, ROUND2_SUBMIT_URL, ROUND3_PPT_URL } from '../config'
 
 function FormCta({ url, label }: { url: string; label: string }) {
   if (!url || url === 'REPLACE_ME') {
@@ -76,16 +77,10 @@ export default function RoundPage() {
             <>
               <h1>Round 2 — Level Up</h1>
               <p>
-                Shortlisted teams get an advanced problem statement and move through multiple build
+                Shortlisted teams get the advanced problem statements and move through multiple build
                 stages, with extra points on the Technical Tasks — and a few surprises built in.
               </p>
-              <div className="round-locked">
-                🔒 This round unlocks after Round 1 results — you'll need the access code given to
-                qualified teams.
-              </div>
-              <p className="hint" style={{ marginTop: 16 }}>
-                The secure access gate and submission open in a later build step.
-              </p>
+              <Round2Gate submitUrl={ROUND2_SUBMIT_URL} />
             </>
           )}
 

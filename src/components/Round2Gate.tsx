@@ -3,21 +3,24 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const LS_KEY = 'vibecraft_r2_code'
 
-interface PS {
+interface Problem {
+  position: number
   title: string
   body: string
 }
 
 type Status = 'locked' | 'checking' | 'unlocked' | 'error'
 
-export default function Round2Gate() {
+/** The server-gated Round 2 content: enter the code → the whole problem-statement list
+ * is fetched via verify_round2 (never present in the page until the code matches). */
+export default function Round2Gate({ submitUrl }: { submitUrl: string }) {
   const [status, setStatus] = useState<Status>('locked')
-  const [ps, setPs] = useState<PS | null>(null)
+  const [problems, setProblems] = useState<Problem[]>([])
   const [msg, setMsg] = useState('')
   const [shake, setShake] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Re-verify a remembered code on mount (the PS itself is never persisted locally).
+  // Re-verify a remembered code on mount (the problems are never persisted locally).
   useEffect(() => {
     let stored: string | null = null
     try {
@@ -31,13 +34,7 @@ export default function Round2Gate() {
 
   async function verify(code: string, silent = false) {
     const clean = code.trim()
-    if (!clean) return
-
-    if (!isSupabaseConfigured || !supabase) {
-      setStatus('error')
-      setMsg('Round 2 access opens on event day. Check back once Round 1 results are out.')
-      return
-    }
+    if (!clean || !supabase) return
 
     setStatus('checking')
     setMsg(silent ? '' : 'Checking…')
@@ -48,9 +45,9 @@ export default function Round2Gate() {
       setMsg('Something went wrong verifying that code. Try again.')
       return
     }
-    const rows = (data as PS[]) ?? []
+    const rows = ((data as Problem[]) ?? []).slice().sort((a, b) => a.position - b.position)
     if (rows.length > 0) {
-      setPs(rows[0])
+      setProblems(rows)
       setStatus('unlocked')
       setMsg('')
       try {
@@ -75,35 +72,54 @@ export default function Round2Gate() {
     }
   }
 
-  if (status === 'unlocked' && ps) {
+  // ---- not live yet (no Supabase) ----
+  if (!isSupabaseConfigured) {
     return (
-      <div>
-        <h3>{ps.title}</h3>
-        <p style={{ whiteSpace: 'pre-wrap' }}>{ps.body}</p>
-        <div className="round3-block">
-          <h3>Round 3 — The Finale</h3>
-          <p>
-            Submit your final working prototype and present it. Like the reality shows, strong
-            performance in earlier rounds earns you an edge here too. This is where VibeCraft Season 1
-            crowns its winner.
-          </p>
-        </div>
+      <div className="round-locked">
+        🔒 Round 2 unlocks on event day — you'll need the access code given to teams that clear
+        Round 1.
       </div>
     )
   }
 
+  // ---- unlocked: show the problem-statement list + submit ----
+  if (status === 'unlocked') {
+    return (
+      <div className="r2-unlocked">
+        <p className="r2-note">✅ Unlocked. Choose a problem statement and build your solution.</p>
+        {problems.map((p, i) => (
+          <article className="r2-problem" key={i}>
+            <h2>{p.title}</h2>
+            <p style={{ whiteSpace: 'pre-wrap' }}>{p.body}</p>
+          </article>
+        ))}
+        {submitUrl && submitUrl !== 'REPLACE_ME' ? (
+          <a className="btn torch round-cta" href={submitUrl} target="_blank" rel="noopener noreferrer">
+            Submit Your Project
+          </a>
+        ) : (
+          <button className="btn torch round-cta" disabled>
+            Submit Your Project — coming soon
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  // ---- locked: code entry ----
   return (
-    <div>
-      <h3>Only Round 1 survivors get this far</h3>
-      <p>If you've cleared Round 1, you've already got the code. Enter it below.</p>
-      <div className={`gate${shake ? ' shake' : ''}`}>
-        <label htmlFor="gateInput">Access code</label>
+    <div className="r2-gate">
+      <label htmlFor="gateInput" className="r2-gate-label">
+        Access code
+      </label>
+      <div className={`r2-gate-row${shake ? ' shake' : ''}`}>
         <input
           ref={inputRef}
           type="text"
           id="gateInput"
+          className="r2-input"
           autoComplete="off"
-          placeholder="Enter your code"
+          placeholder="Enter your Round 1 code"
           aria-describedby="gateMsg"
           onKeyDown={(e) => {
             if (e.key === 'Enter') void verify((e.target as HTMLInputElement).value)
@@ -117,11 +133,7 @@ export default function Round2Gate() {
           {status === 'checking' ? 'Checking…' : 'Unlock'}
         </button>
       </div>
-      <p
-        className={`gate-msg${status === 'error' ? ' err' : ''}`}
-        id="gateMsg"
-        aria-live="polite"
-      >
+      <p className={`r2-msg${status === 'error' ? ' err' : ''}`} id="gateMsg" aria-live="polite">
         {msg}
       </p>
     </div>
