@@ -201,7 +201,7 @@ header.site{
 /* ---------- two-card rows ---------- */
 .card-row{display:grid; grid-template-columns:1fr 1fr; gap:28px;}
 @media (max-width:760px){.card-row{grid-template-columns:1fr;}}
-.card{padding:30px;}
+.card{padding:30px; display:flex; flex-direction:column;}
 .card h3{font-size:17px; margin:0 0 18px; display:flex; align-items:center; gap:10px;}
 .card h3 .dot{width:14px; height:14px; background:var(--grass); border:2px solid var(--ink); display:inline-block;}
 .card ul{margin:0; padding-left:0; list-style:none;}
@@ -210,10 +210,11 @@ header.site{
 .card .btn{margin-top:20px;}
 
 /* ---------- format & ground rules (inside the Team & Registration card) ---------- */
-.format-list{display:flex; flex-direction:column; gap:16px;}
-.format-item{display:flex; align-items:flex-start; gap:12px;}
-.format-item .glyph{font-size:22px; line-height:1; flex-shrink:0;}
-.format-item p{margin:0; font-size:14.5px; font-weight:500; line-height:1.5;}
+.format-list{flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:14px;}
+.format-item{display:flex; align-items:flex-start; gap:14px;}
+.format-item + .format-item{border-top:1px solid rgba(27,20,12,0.14); padding-top:14px;}
+.format-item .glyph{font-size:24px; line-height:1; flex-shrink:0; width:30px; text-align:center;}
+.format-item p{margin:0; font-size:15px; font-weight:500; line-height:1.5;}
 
 /* ---------- rounds (gated centerpiece) ---------- */
 .rounds-zone{
