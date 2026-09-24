@@ -7,11 +7,6 @@ export const EVENT_END = '2026-09-28T18:00:00+05:30' // 6:00 PM IST
 // Default duration the admin panel pre-fills when starting the timer (editable live).
 export const DEFAULT_DURATION_MS = 9 * 60 * 60 * 1000 // 9 hours
 
-// ---- External links ----
-export const REGISTER_URL =
-  'https://campusquest.incuman.com/events/detail/ddc130a5-ef6e-4b00-9e32-41fb7d7ee4af'
-export const SUBMIT_FORM_URL = 'https://forms.gle/pQiVXgAWmLuuzJx59'
-
 // ---- Google Form placeholders (owner will supply real URLs) ----
 export const REGISTER_FORM_URL = 'REPLACE_ME' // ① team registration (hero + nav)
 export const ROUND1_SUBMIT_URL = 'REPLACE_ME' // ② Round 1 submission

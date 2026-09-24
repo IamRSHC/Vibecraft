@@ -4,9 +4,7 @@ import Nav from './components/Nav'
 import Hero from './components/Hero'
 import About from './components/About'
 import Rules from './components/Rules'
-import Format from './components/Format'
 import Rounds from './components/Rounds'
-import Submit from './components/Submit'
 import Prizes from './components/Prizes'
 import Partners from './components/Partners'
 import Footer from './components/Footer'
@@ -25,9 +23,7 @@ export default function App() {
         <div className="divider" aria-hidden="true" />
         <About />
         <Rules />
-        <Format />
         <Rounds />
-        <Submit />
         <Prizes />
         <Partners />
       </main>

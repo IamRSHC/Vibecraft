@@ -6,10 +6,10 @@ export default function Footer() {
           <div className="foot-brand">VIBECRAFT</div>
           <div className="foot-links">
             <a href="#rules">Rules</a>
-            <a href="#register">Register</a>
+            <a href="#rules">Register</a>
             <a href="#rounds">Rounds</a>
             {/* TODO: swap in a real support email/link, e.g. mailto:ntt@yourdomain */}
-            <a href="#register">Need help?</a>
+            <a href="#rules">Need help?</a>
           </div>
         </div>
         <p className="fine-print">

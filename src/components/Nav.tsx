@@ -3,9 +3,8 @@ import { REGISTER_FORM_URL } from '../config'
 
 const LINKS = [
   { href: '#rules', label: 'Rules' },
-  { href: '#register', label: 'Register' },
+  { href: '#rules', label: 'Register' },
   { href: '#rounds', label: 'Rounds' },
-  { href: '#submit', label: 'Submit' },
   { href: '#prizes', label: 'Prizes' },
 ]
 
@@ -30,7 +29,7 @@ export default function Nav() {
         </button>
         <div className={`nav-links${open ? ' open' : ''}`} id="navLinks">
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
+            <a key={l.label} href={l.href} onClick={() => setOpen(false)}>
               {l.label}
             </a>
           ))}

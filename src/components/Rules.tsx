@@ -1,4 +1,9 @@
-import { REGISTER_URL } from '../config'
+const FORMAT_TILES = [
+  { glyph: '🏫', text: 'Fully offline. All rounds run in person on the 4th floor.' },
+  { glyph: '🤖', text: "AI tools are fair game — it's a vibe-coding event. Use what makes you faster." },
+  { glyph: '🤝', text: 'Play fair and follow event-day instructions so rounds run on schedule.' },
+  { glyph: '⏱️', text: "Submit within the window you're given. Late work risks elimination." },
+]
 
 export default function Rules() {
   return (
@@ -35,30 +40,19 @@ export default function Rules() {
             </p>
           </div>
 
-          <div className="pixel-panel card" id="register">
+          <div className="pixel-panel card">
             <h3>
               <span className="dot" aria-hidden="true" />
-              How to Register
+              Format &amp; Ground Rules
             </h3>
-            <ul>
-              <li>₹500 per team, one payment covers the whole squad.</li>
-              <li>
-                Registration happens through CampusQuest only. If you expressed interest via Unstop,
-                check your email for the CampusQuest link — Unstop is for event info, not
-                registration.
-              </li>
-              <li>
-                Double-check your name, department, and university before you submit. Certificates
-                are printed from this data, and changes after registration aren't accepted.
-              </li>
-              <li>
-                After payment, watch your inbox — a confirmation mail with further details follows
-                from the official NTT team.
-              </li>
-            </ul>
-            <a href={REGISTER_URL} className="btn block" target="_blank" rel="noopener noreferrer">
-              Register on CampusQuest
-            </a>
+            <div className="format-list">
+              {FORMAT_TILES.map((t, i) => (
+                <div className="format-item" key={i}>
+                  <div className="glyph" aria-hidden="true">{t.glyph}</div>
+                  <p>{t.text}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
