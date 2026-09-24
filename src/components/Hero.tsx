@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { motion } from 'framer-motion'
 import { useTimer } from '../hooks/useTimer'
+import { REGISTER_FORM_URL } from '../config'
 
 const VoxelDiorama = lazy(() => import('./VoxelDiorama'))
 
@@ -42,7 +43,7 @@ export default function Hero() {
           </motion.div>
 
           <motion.div className="hero-ctas" custom={4} variants={rise}>
-            <a href="#register" className="btn torch">
+            <a href={REGISTER_FORM_URL} target="_blank" rel="noopener noreferrer" className="btn torch">
               Register your team
             </a>
             <a href="#rules" className="btn ghost">

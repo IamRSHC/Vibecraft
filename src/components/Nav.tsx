@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { REGISTER_FORM_URL } from '../config'
 
 const LINKS = [
   { href: '#rules', label: 'Rules' },
@@ -33,7 +34,13 @@ export default function Nav() {
               {l.label}
             </a>
           ))}
-          <a href="#register" className="btn torch nav-cta" onClick={() => setOpen(false)}>
+          <a
+            href={REGISTER_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn torch nav-cta"
+            onClick={() => setOpen(false)}
+          >
             Register Now
           </a>
         </div>
