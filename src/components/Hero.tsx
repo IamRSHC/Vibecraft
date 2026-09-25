@@ -44,7 +44,7 @@ export default function Hero() {
 
           <motion.div className="hero-ctas" custom={4} variants={rise}>
             <a href={REGISTER_FORM_URL} target="_blank" rel="noopener noreferrer" className="btn torch">
-              Register your team
+              Mark Attendance
             </a>
             <a href="#rules" className="btn ghost">
               See the rules

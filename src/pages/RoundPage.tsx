@@ -42,7 +42,7 @@ export default function RoundPage() {
             rel="noopener noreferrer"
             className="btn torch nav-cta"
           >
-            Register Now
+            Mark Attendance
           </a>
         </nav>
       </header>

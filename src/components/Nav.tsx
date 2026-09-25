@@ -40,7 +40,7 @@ export default function Nav() {
             className="btn torch nav-cta"
             onClick={() => setOpen(false)}
           >
-            Register Now
+            Mark Attendance
           </a>
         </div>
       </nav>
