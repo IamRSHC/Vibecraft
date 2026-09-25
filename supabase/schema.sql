@@ -27,12 +27,13 @@ drop policy if exists "timer read" on public.timer_state;
 create policy "timer read" on public.timer_state
   for select using (true);
 
--- only the admin (matched by email in their JWT) can WRITE it
+-- only the admin (matched by email in their JWT) can WRITE it.
+-- Supabase Auth stores emails lowercased, so compare lowercase on both sides.
 drop policy if exists "timer admin update" on public.timer_state;
 create policy "timer admin update" on public.timer_state
   for update
-  using      ( (auth.jwt() ->> 'email') = 'Supabasentt@gmail.com' )
-  with check ( (auth.jwt() ->> 'email') = 'Supabasentt@gmail.com' );
+  using      ( lower(auth.jwt() ->> 'email') = lower('Supabasentt@gmail.com') )
+  with check ( lower(auth.jwt() ->> 'email') = lower('Supabasentt@gmail.com') );
 
 -- keep updated_at fresh on every write
 create or replace function public.touch_updated_at()

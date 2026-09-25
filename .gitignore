@@ -6,3 +6,9 @@ dist-ssr
 .env.local
 .DS_Store
 *.log
+
+# Secret SQL for the Dragon (server-secret hash, level prompts) — never commit
+supabase/private/
+
+# Local helper binaries (cloudflared.exe for the Dragon tunnel) — never commit
+tools/

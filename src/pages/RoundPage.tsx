@@ -81,6 +81,14 @@ export default function RoundPage() {
                 stages, with extra points on the Technical Tasks — and a few surprises built in.
               </p>
               <Round2Gate submitUrl={ROUND2_SUBMIT_URL} />
+              <div className="round-phase">
+                <p className="round-eyebrow" style={{ color: 'var(--ender-light)', margin: '0 0 10px' }}>
+                  PHASE 2 · TECHNICAL TASK
+                </p>
+                <Link to="/round/2/dragon" className="btn round-cta" style={{ marginTop: 0 }}>
+                  Face the Ender Dragon →
+                </Link>
+              </div>
             </>
           )}
 

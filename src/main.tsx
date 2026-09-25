@@ -6,6 +6,7 @@ import AdminPanel from './admin/AdminPanel'
 import './index.css'
 
 const RoundPage = lazy(() => import('./pages/RoundPage'))
+const DragonPage = lazy(() => import('./pages/DragonPage'))
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
@@ -18,6 +19,14 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
           element={
             <Suspense fallback={null}>
               <RoundPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/round/2/dragon"
+          element={
+            <Suspense fallback={null}>
+              <DragonPage />
             </Suspense>
           }
         />
