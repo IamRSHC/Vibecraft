@@ -2,8 +2,10 @@
 // and inside the Vite dev server locally (see vite.config.ts).
 //
 // Flow for a chat message: input filter (free) → dragon_chat_begin (team, cooldown, global cap)
-// → local LLM via the tunnel → output filter → reply. Passwords never touch the database:
-// each team's password per level is derived from DRAGON_SECRET.
+// → AI engine → kindness check → output filter → reply (+ any hints the team has unlocked).
+// Engines: Cloudflare Workers AI and the organiser laptop (LM Studio via a tunnel). One is tried
+// first (dragon_config.engine_mode), the other takes over on any error, timeout or daily limit.
+// Passwords never touch the database: each team's password per level is derived from DRAGON_SECRET.
 import { createHmac, randomInt } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { makeTeamKey, normalizeTeamKey } from '../src/lib/teamKey.js'
@@ -15,6 +17,10 @@ interface DragonConfig {
   llm_url: string
   llm_model: string
   cooldown_s: number
+  engine_mode: 'cloudflare' | 'laptop'
+  cf_exhausted_until: string | null
+  hint1_after: number
+  hint2_after: number
 }
 
 interface DragonLevel {
@@ -22,6 +28,8 @@ interface DragonLevel {
   system_prompt: string
   blocked_words: string[]
   output_filter: 'none' | 'exact' | 'strict'
+  hint1: string
+  hint2: string
 }
 
 interface ServerConfig {
@@ -29,9 +37,20 @@ interface ServerConfig {
   levels: DragonLevel[]
 }
 
-const LLM_TIMEOUT_MS = 25_000
+type Engine = 'cloudflare' | 'laptop'
+
+const CF_MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8-fast'
+const FIRST_TRY_MS = 15_000
+const SECOND_TRY_MS = 20_000
 const CONFIG_TTL_MS = 15_000
 const MAX_MESSAGE = 400
+
+// Shown instead of a reply that stayed unkind after a retry. Never contains the password.
+const FRIENDLY_LINES = [
+  'Nice try, adventurer! My lips are sealed, but I admire your courage.',
+  'Ha! A clever attempt. The treasure stays safe with me for now.',
+  'You have a brave heart. Keep trying, new ideas can open old doors.',
+]
 
 // Passwords are ADJECTIVE + NOUN ("SNEAKYPICKLE"). The words avoid what the dragons talk about
 // anyway (the End, portals, obsidian…) so the censor doesn't burn innocent replies.
@@ -91,6 +110,29 @@ export function blockedWord(message: string, words: string[]): string | null {
   return m ? m[1].toLowerCase() : null
 }
 
+const UNKIND =
+  /\b(foolish|fools?|silly|stupid|idiots?|dumb|pathetic|puny|weakling|losers?|ignorant|worthless|insolent|impudent|imbeciles?|morons?|how dare)\b/i
+
+/** True when a reply talks down to the player. Such replies are regenerated, never shown. */
+export function isUnkind(reply: string): boolean {
+  return UNKIND.test(reply)
+}
+
+/** Hints the team has unlocked on a level after `msgs` messages, and how many more until the next. */
+export function hintsFor(level: DragonLevel, msgs: number, config: DragonConfig) {
+  const hints: string[] = []
+  if (level.hint1 && msgs >= config.hint1_after) hints.push(level.hint1)
+  if (level.hint2 && msgs >= config.hint2_after) hints.push(level.hint2)
+  const next = !level.hint1
+    ? null
+    : msgs < config.hint1_after
+      ? config.hint1_after - msgs
+      : level.hint2 && msgs < config.hint2_after
+        ? config.hint2_after - msgs
+        : null
+  return { hints, next_hint_in: next }
+}
+
 async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
   const { data, error } = await db!.rpc(name, args)
   if (error) throw error
@@ -104,15 +146,32 @@ async function serverConfig(secret: string): Promise<ServerConfig> {
   return data
 }
 
-async function askDragon(config: DragonConfig, system: string, message: string): Promise<string> {
+/** Cloudflare refused because the free daily neurons are used up (error 4006). */
+class DailyLimitError extends Error {}
+
+/** True for Cloudflare's "daily free allocation used up" response. */
+export function isDailyLimit(status: number, body: string): boolean {
+  return status === 429 && /4006|daily free allocation|neurons/i.test(body)
+}
+
+// In-memory mirror of dragon_config.cf_exhausted_until, so this instance stops calling
+// Cloudflare the moment it hears "daily limit" (other instances follow within CONFIG_TTL_MS).
+let cfExhaustedUntil = 0
+
+const nextUtcMidnight = () => {
+  const d = new Date()
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1)
+}
+
+async function chatCompletion(url: string, headers: Record<string, string>, model: string, system: string, message: string, timeoutMs: number): Promise<string> {
   const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), LLM_TIMEOUT_MS)
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
   try {
-    const res = await fetch(`${config.llm_url.replace(/\/+$/, '')}/v1/chat/completions`, {
+    const res = await fetch(url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...headers },
       body: JSON.stringify({
-        model: config.llm_model,
+        model,
         temperature: 0.7,
         max_tokens: 150,
         messages: [
@@ -122,7 +181,11 @@ async function askDragon(config: DragonConfig, system: string, message: string):
       }),
       signal: ctrl.signal,
     })
-    if (!res.ok) throw new Error(`llm status ${res.status}`)
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      if (isDailyLimit(res.status, body)) throw new DailyLimitError(body.slice(0, 200))
+      throw new Error(`llm status ${res.status}`)
+    }
     const data = (await res.json()) as { choices?: { message?: { content?: string } }[] }
     const text = data.choices?.[0]?.message?.content?.trim()
     if (!text) throw new Error('llm empty reply')
@@ -130,6 +193,57 @@ async function askDragon(config: DragonConfig, system: string, message: string):
   } finally {
     clearTimeout(timer)
   }
+}
+
+function cloudflareReady(config: DragonConfig, env: DragonEnv): boolean {
+  if (!env.CF_ACCOUNT_ID || !env.CF_AI_TOKEN) return false
+  const until = Math.max(cfExhaustedUntil, config.cf_exhausted_until ? Date.parse(config.cf_exhausted_until) : 0)
+  return Date.now() >= until
+}
+
+/** Which engines to try, in order. */
+export function engineOrder(config: DragonConfig, env: DragonEnv): Engine[] {
+  if (!cloudflareReady(config, env)) return ['laptop']
+  return config.engine_mode === 'laptop' ? ['laptop', 'cloudflare'] : ['cloudflare', 'laptop']
+}
+
+function askEngine(engine: Engine, config: DragonConfig, env: DragonEnv, system: string, message: string, timeoutMs: number) {
+  if (engine === 'cloudflare') {
+    return chatCompletion(
+      `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/ai/v1/chat/completions`,
+      { authorization: `Bearer ${env.CF_AI_TOKEN}` },
+      CF_MODEL,
+      system,
+      message,
+      timeoutMs,
+    )
+  }
+  return chatCompletion(`${config.llm_url.replace(/\/+$/, '')}/v1/chat/completions`, {}, config.llm_model, system, message, timeoutMs)
+}
+
+/** A kind reply from the first engine that works, or null if every engine failed. */
+async function dragonReply(config: DragonConfig, env: DragonEnv, secret: string, system: string, message: string) {
+  const order = engineOrder(config, env)
+  for (let i = 0; i < order.length; i++) {
+    const engine = order[i]
+    const timeout = i === 0 ? FIRST_TRY_MS : SECOND_TRY_MS
+    try {
+      let text = await askEngine(engine, config, env, system, message, timeout)
+      if (isUnkind(text)) text = await askEngine(engine, config, env, system, message, timeout)
+      if (isUnkind(text)) {
+        return { text: FRIENDLY_LINES[Math.floor(Math.random() * FRIENDLY_LINES.length)], engine: 'fallback' as const }
+      }
+      return { text, engine }
+    } catch (e) {
+      if (e instanceof DailyLimitError) {
+        cfExhaustedUntil = nextUtcMidnight()
+        cached = null
+        await rpc('dragon_mark_cf_exhausted', { p_secret: secret }).catch(() => {})
+      }
+      // fall through to the next engine
+    }
+  }
+  return null
 }
 
 type Body = { action?: string; key?: string; name?: string; level?: number; message?: string; guess?: string }
@@ -140,7 +254,9 @@ export async function handleDragon(request: Request, env: DragonEnv): Promise<Re
   const secret = env.DRAGON_SECRET
   const configured = Boolean(url && anon && secret)
 
-  if (request.method === 'GET') return json({ service: 'dragon', configured })
+  if (request.method === 'GET') {
+    return json({ service: 'dragon', configured, cloudflare: Boolean(env.CF_ACCOUNT_ID && env.CF_AI_TOKEN) })
+  }
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
   if (!configured) return json({ error: 'not_configured' }, 503)
 
@@ -157,8 +273,20 @@ export async function handleDragon(request: Request, env: DragonEnv): Promise<Re
 
   try {
     switch (body.action) {
-      case 'status':
-        return json(await rpc('dragon_status', { p_secret: secret, p_key: key }))
+      case 'status': {
+        const status = await rpc<{ team: unknown; msgs?: Record<string, number>; levels?: { level: number }[] }>(
+          'dragon_status',
+          { p_secret: secret, p_key: key },
+        )
+        if (!status.team || !status.levels) return json(status)
+        const { config, levels } = await serverConfig(secret!)
+        const withHints = status.levels.map((l) => {
+          const full = levels.find((x) => x.level === l.level)
+          const msgs = status.msgs?.[String(l.level)] ?? 0
+          return { ...l, msgs, ...(full ? hintsFor(full, msgs, config) : { hints: [], next_hint_in: null }) }
+        })
+        return json({ ...status, levels: withHints })
+      }
 
       case 'setup': {
         const newKey = makeTeamKey(randomInt)
@@ -184,25 +312,31 @@ export async function handleDragon(request: Request, env: DragonEnv): Promise<Re
         const hit = blockedWord(message, lvl.blocked_words)
         if (hit) return json({ ok: true, blocked_word: hit })
 
-        const begin = await rpc<{ ok: boolean; reason?: string; retry_after?: number; team_id: number; msg_id: number; prev_last: string | null; cooldown_s: number }>(
-          'dragon_chat_begin',
-          { p_secret: secret, p_key: key, p_level: level, p_message: message },
-        )
+        const begin = await rpc<{
+          ok: boolean
+          reason?: string
+          retry_after?: number
+          team_id: number
+          msg_id: number
+          prev_last: string | null
+          cooldown_s: number
+          level_msgs: number
+        }>('dragon_chat_begin', { p_secret: secret, p_key: key, p_level: level, p_message: message })
         if (!begin.ok) return json({ ok: false, reason: begin.reason, retry_after: begin.retry_after })
 
         const parts = passwordParts(secret!, begin.team_id, level)
         const system = lvl.system_prompt.split('{{PASSWORD}}').join(parts.join(''))
-        let reply: string
-        try {
-          reply = await askDragon(config, system, message)
-        } catch {
+        const answer = await dragonReply(config, env, secret!, system, message)
+        if (!answer) {
           await rpc('dragon_chat_refund', { p_secret: secret, p_msg_id: begin.msg_id, p_prev_last: begin.prev_last })
           return json({ ok: false, reason: 'dozed' })
         }
-        if (leaksPassword(reply, parts, lvl.output_filter)) {
-          return json({ ok: true, burned: true, cooldown_s: begin.cooldown_s })
-        }
-        return json({ ok: true, reply, cooldown_s: begin.cooldown_s })
+        await rpc('dragon_chat_finish', { p_secret: secret, p_msg_id: begin.msg_id, p_engine: answer.engine }).catch(() => {})
+
+        // `engine` isn't shown to players; it lets organisers verify failover from the browser's Network tab
+        const extra = { cooldown_s: begin.cooldown_s, msgs: begin.level_msgs, engine: answer.engine, ...hintsFor(lvl, begin.level_msgs, config) }
+        if (leaksPassword(answer.text, parts, lvl.output_filter)) return json({ ok: true, burned: true, ...extra })
+        return json({ ok: true, reply: answer.text, ...extra })
       }
 
       case 'guess': {

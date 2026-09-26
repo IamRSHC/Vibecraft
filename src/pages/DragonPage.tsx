@@ -17,6 +17,13 @@ interface LevelInfo {
   title: string
   intro: string
   points: number
+  hints?: string[]
+  next_hint_in?: number | null
+}
+
+interface HintState {
+  hints: string[]
+  next: number | null
 }
 
 interface StatusResponse {
@@ -139,7 +146,7 @@ export default function DragonPage() {
           </p>
           <h1 className="dg-title">The Ender Dragon</h1>
           <p className="dg-lead">
-            Five dragons each guard a password. Talk them into revealing it, then enter it to beat the
+            Four dragons each guard a password. Talk them into revealing it, then enter it to beat the
             level. Every team gets its own passwords, so sharing answers won't help anyone.
           </p>
 
@@ -305,6 +312,11 @@ function Game({
   const [pending, setPending] = useState(false)
   const [showKey, setShowKey] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState(() => Date.now() + (state.cooldown_left ?? 0) * 1000)
+  // unlocked hints per level (from the server, so every teammate's laptop sees the same)
+  const [hintState, setHintState] = useState<Record<number, HintState>>({})
+  useEffect(() => {
+    setHintState(Object.fromEntries(levels.map((l) => [l.level, { hints: l.hints ?? [], next: l.next_hint_in ?? null }])))
+  }, [state]) // eslint-disable-line react-hooks/exhaustive-deps
   const [now, setNow] = useState(Date.now())
   const logEnd = useRef<HTMLDivElement>(null)
 
@@ -349,6 +361,8 @@ function Game({
       reason: string
       retry_after: number
       cooldown_s: number
+      hints: string[]
+      next_hint_in: number | null
     }>({ action: 'chat', key: teamKey, level: selected, message: text })
     setPending(false)
 
@@ -363,12 +377,15 @@ function Game({
     if (res.ok) {
       setMessage('')
       setCooldownUntil(Date.now() + (res.cooldown_s ?? 30) * 1000)
+      const newHint = !!res.hints && res.hints.length > (hintState[selected]?.hints.length ?? 0)
+      if (res.hints) setHintState((h) => ({ ...h, [selected]: { hints: res.hints ?? [], next: res.next_hint_in ?? null } }))
       add(
         selected,
         { from: 'you', text },
         res.burned
           ? { from: 'dragon', tone: 'burn', text: '🔥 The dragon started to answer, but its reply contained the password, so its fire burned the words away.' }
           : { from: 'dragon', text: res.reply ?? '…' },
+        ...(newHint ? [{ from: 'system' as const, tone: 'ok' as const, text: '💡 A new hint is unlocked above the chat.' }] : []),
       )
       return
     }
@@ -468,7 +485,7 @@ function Game({
               <p className="dg-bigemoji" aria-hidden="true">
                 🐉👑
               </p>
-              <h2 className="dg-h2">You outwitted all five dragons!</h2>
+              <h2 className="dg-h2">You outwitted all the dragons!</h2>
               <p>Your team has cleared every level. Well played.</p>
             </div>
           ) : info ? (
@@ -478,6 +495,21 @@ function Game({
                   Level {info.level} · {info.title}
                 </h2>
                 <p className="dg-muted">{info.intro}</p>
+                {!cleared.has(selected) && (
+                  <div className="dg-hints">
+                    {(hintState[selected]?.hints ?? []).map((h, i) => (
+                      <p key={i} className="dg-hint">
+                        💡 <strong>Hint {i + 1}:</strong> {h}
+                      </p>
+                    ))}
+                    {hintState[selected]?.next != null && (
+                      <p className="dg-small">
+                        💡 {hintState[selected]!.hints.length ? 'Another hint' : 'A hint'} unlocks after{' '}
+                        {hintState[selected]!.next} more message{hintState[selected]!.next === 1 ? '' : 's'} to this dragon.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="dg-log" aria-live="polite">

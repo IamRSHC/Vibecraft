@@ -12,12 +12,21 @@ interface Config {
   cooldown_s: number
   global_per_min: number
   guesses_per_min: number
+  engine_mode: 'cloudflare' | 'laptop'
+  cf_exhausted_until: string | null
+  hint1_after: number
+  hint2_after: number
 }
+
+// measured cost of one Dragon message on Cloudflare (27 Sep: ≈190 tokens in, ≈45 out → 2.36 neurons)
+const NEURONS_PER_MSG = 2.4
+const DAILY_NEURONS = 10_000
 
 interface Overview {
   config: Config
   msgs_last_min: number
   msgs_total: number
+  engine_today: { cloudflare: number; laptop: number; fallback: number }
   levels: { level: number; title: string; cleared_by: number }[]
   teams: { id: number; name: string; created_at: string; cleared: number[]; msgs: number }[]
 }
@@ -36,6 +45,15 @@ export default function DragonAdmin() {
   const [err, setErr] = useState('')
   const [note, setNote] = useState('')
   const [filter, setFilter] = useState('')
+  const [cfKeys, setCfKeys] = useState<boolean | null>(null)
+
+  // Are the Cloudflare keys set on the server? (The admin page can't see server env directly.)
+  useEffect(() => {
+    fetch('/api/dragon')
+      .then((r) => r.json())
+      .then((d: { cloudflare?: boolean }) => setCfKeys(Boolean(d.cloudflare)))
+      .catch(() => setCfKeys(null))
+  }, [])
 
   const load = useCallback(async () => {
     if (!supabase) return
@@ -120,6 +138,26 @@ export default function DragonAdmin() {
         </Btn>
       </div>
 
+      <h3 style={h3}>AI engines</h3>
+      <EngineStatus cfg={cfg} cfKeys={cfKeys} today={data.engine_today} />
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 }}>
+        <Btn tone={cfg.engine_mode === 'cloudflare' ? 'grass' : 'ghost'} onClick={() => void updateConfig({ engine_mode: 'cloudflare' })}>
+          ☁️ Cloudflare first
+        </Btn>
+        <Btn tone={cfg.engine_mode === 'laptop' ? 'grass' : 'ghost'} onClick={() => void updateConfig({ engine_mode: 'laptop' })}>
+          💻 Laptop first
+        </Btn>
+        {cfg.cf_exhausted_until && new Date(cfg.cf_exhausted_until) > new Date() && (
+          <Btn tone="torch" onClick={() => void updateConfig({ cf_exhausted_until: null })}>
+            Retry Cloudflare now
+          </Btn>
+        )}
+      </div>
+      <p style={{ color: '#6b6482', fontSize: 12, margin: '8px 0 0' }}>
+        Whichever engine is first answers every message; the other takes over automatically on any error, slowness or
+        Cloudflare's daily limit. Keep LM Studio and the tunnel running either way.
+      </p>
+
       <h3 style={h3}>Levels cleared</h3>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {data.levels.map((l) => (
@@ -149,6 +187,14 @@ export default function DragonAdmin() {
             <input style={{ ...input, marginTop: 4, width: 110 }} type="number" min={1} max={5000} value={draft.global_per_min} onChange={(e) => setDraft({ ...draft, global_per_min: Number(e.target.value) })} />
           </label>
           <label style={lbl}>
+            Hint 1 after (messages)
+            <input style={{ ...input, marginTop: 4, width: 110 }} type="number" min={0} max={50} value={draft.hint1_after} onChange={(e) => setDraft({ ...draft, hint1_after: Number(e.target.value) })} />
+          </label>
+          <label style={lbl}>
+            Hint 2 after (messages)
+            <input style={{ ...input, marginTop: 4, width: 110 }} type="number" min={0} max={50} value={draft.hint2_after} onChange={(e) => setDraft({ ...draft, hint2_after: Number(e.target.value) })} />
+          </label>
+          <label style={lbl}>
             Guesses / min per team
             <input style={{ ...input, marginTop: 4, width: 110 }} type="number" min={1} max={60} value={draft.guesses_per_min} onChange={(e) => setDraft({ ...draft, guesses_per_min: Number(e.target.value) })} />
           </label>
@@ -163,6 +209,8 @@ export default function DragonAdmin() {
                 cooldown_s: draft.cooldown_s,
                 global_per_min: draft.global_per_min,
                 guesses_per_min: draft.guesses_per_min,
+                hint1_after: draft.hint1_after,
+                hint2_after: draft.hint2_after,
               })
             }
           >
@@ -199,6 +247,29 @@ export default function DragonAdmin() {
 
       {note && <p style={{ color: '#6FA043', fontSize: 14, marginTop: 14, overflowWrap: 'anywhere' }}>{note}</p>}
       {err && <p style={{ color: '#E33D2E', fontSize: 14, marginTop: 14 }}>⚠ {err}</p>}
+    </div>
+  )
+}
+
+function EngineStatus({ cfg, cfKeys, today }: { cfg: Config; cfKeys: boolean | null; today: Overview['engine_today'] }) {
+  const exhausted = cfg.cf_exhausted_until && new Date(cfg.cf_exhausted_until) > new Date()
+  const used = Math.round(today.cloudflare * NEURONS_PER_MSG)
+  const cloud =
+    cfKeys === false
+      ? '⚠️ Cloudflare keys are not set on the server, so everything goes to the laptop.'
+      : exhausted
+        ? `⛔ Cloudflare's free limit is used up. Using the laptop until ${new Date(cfg.cf_exhausted_until!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`
+        : '✅ Cloudflare ready.'
+  return (
+    <div style={{ fontSize: 14, color: '#CFC6A9', display: 'grid', gap: 4 }}>
+      <span>
+        First engine: <strong style={{ color: '#FFB35C' }}>{cfg.engine_mode === 'cloudflare' ? 'Cloudflare' : 'Laptop'}</strong> · {cloud}
+      </span>
+      <span>
+        Today: Cloudflare {today.cloudflare} messages (≈{used.toLocaleString()} of {DAILY_NEURONS.toLocaleString()} free neurons,{' '}
+        {Math.min(100, Math.round((used / DAILY_NEURONS) * 100))}%) · Laptop {today.laptop}
+        {today.fallback ? ` · Friendly fallback lines ${today.fallback}` : ''}
+      </span>
     </div>
   )
 }
