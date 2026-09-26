@@ -220,6 +220,92 @@ header.site{
 .rounds-zone{
   background:var(--night-2);
   border-top:3px solid var(--ink); border-bottom:3px solid var(--ink);
+  position:relative; overflow:hidden; isolation:isolate;
+}
+.rounds-zone > .wrap{position:relative; z-index:1;}
+
+/* ---------- rounds backdrop: nether-portal vortex + ender particles ---------- */
+.rounds-bg{
+  position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; contain:strict;
+  background:radial-gradient(ellipse 80% 70% at 50% 60%, #1d1238 0%, #160f28 45%, var(--night-2) 100%);
+}
+.portal{
+  position:absolute; left:50%; top:58%;
+  width:min(1150px,130vw); height:min(1150px,130vw);
+  transform:translate(-50%,-50%);
+  opacity:0.7; /* intensity cap: the deck's text must never wash out */
+}
+.portal-core,.portal-swirl,.portal-ring{position:absolute; border-radius:50%; mix-blend-mode:screen; will-change:transform,opacity;}
+.portal-core{
+  inset:0;
+  background:radial-gradient(circle, rgba(224,92,255,0.55) 0%, rgba(124,77,255,0.35) 30%, transparent 68%);
+  filter:blur(40px);
+  animation:portalBreathe 7s ease-in-out infinite;
+}
+.portal-swirl{
+  -webkit-mask:radial-gradient(circle, #000 22%, transparent 72%);
+          mask:radial-gradient(circle, #000 22%, transparent 72%);
+  filter:blur(26px);
+}
+.portal-swirl.a{
+  inset:0;
+  background:repeating-conic-gradient(from 0deg, transparent 0deg, rgba(160,80,255,0.45) 18deg, rgba(224,92,255,0.12) 36deg, rgba(90,40,180,0.5) 54deg, transparent 72deg);
+  animation:portalSpin 42s linear infinite;
+}
+.portal-swirl.b{
+  inset:9%; /* ~82% of the portal */
+  background:repeating-conic-gradient(from 36deg, transparent 0deg, rgba(224,92,255,0.42) 20deg, rgba(90,46,160,0.55) 42deg, rgba(224,92,255,0.14) 58deg, transparent 72deg);
+  animation:portalSpinRev 64s linear infinite;
+}
+.portal-ring{
+  inset:0;
+  background:radial-gradient(circle, transparent 46%, rgba(200,120,255,0.5) 50%, transparent 54%);
+  filter:blur(6px);
+  animation:portalRing 4s ease-in-out infinite;
+}
+
+.ender-field,.ender-glyphs{position:absolute; inset:0;}
+.ender-p{
+  position:absolute; border-radius:50%; opacity:0.6;
+  background:radial-gradient(circle, #cfe0ff 0%, var(--ender-light) 45%, transparent 70%);
+  box-shadow:0 0 6px rgba(168,139,255,0.8);
+  animation:enderDrift 13s ease-in-out infinite both;
+  will-change:transform,opacity;
+}
+.ender-glyph{
+  position:absolute; opacity:0.16; color:var(--ender-light);
+  font-family:'Segoe UI Symbol','Noto Sans Symbols 2',system-ui,sans-serif; font-size:22px; line-height:1;
+  text-shadow:0 0 8px rgba(168,139,255,0.6);
+  animation:enderGlyph 19s ease-in-out infinite both;
+  will-change:transform,opacity;
+}
+.rounds-vignette{
+  position:absolute; inset:0;
+  background:
+    linear-gradient(180deg, rgba(20,26,53,0.92) 0%, rgba(20,26,53,0.55) 16%, rgba(20,26,53,0) 32%),
+    radial-gradient(ellipse 78% 72% at 50% 58%, transparent 45%, rgba(11,14,31,0.6) 100%);
+}
+
+@keyframes portalSpin{from{transform:rotate(0deg);} to{transform:rotate(360deg);}}
+@keyframes portalSpinRev{from{transform:rotate(0deg);} to{transform:rotate(-360deg);}}
+@keyframes portalBreathe{0%,100%{opacity:0.55; transform:scale(1);} 50%{opacity:0.85; transform:scale(1.06);}}
+@keyframes portalRing{0%,100%{opacity:0.4;} 50%{opacity:0.75;}}
+@keyframes enderDrift{
+  0%{opacity:0; transform:translate(0,0);}
+  15%{opacity:0.9;}
+  70%{opacity:0.6;}
+  100%{opacity:0; transform:translate(var(--sway,-40px),-130px);}
+}
+@keyframes enderGlyph{
+  0%{opacity:0; transform:translateY(0) rotate(0deg);}
+  25%,75%{opacity:0.2;}
+  100%{opacity:0; transform:translateY(-70px) rotate(8deg);}
+}
+
+.rounds-bg[data-paused] *{animation-play-state:paused !important;}
+@media (max-width:700px){ .ender-field .ender-p:nth-child(n+9){display:none;} }
+@media (prefers-reduced-motion: reduce){
+  .portal-core,.portal-swirl,.portal-ring,.ender-p,.ender-glyph{animation:none !important;}
 }
 .pill-row{display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:36px;}
 @media (max-width:700px){.pill-row{grid-template-columns:1fr;}}

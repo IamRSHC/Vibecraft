@@ -1,8 +1,10 @@
 import RoundsDeck from './RoundsDeck'
+import RoundsBackground from './RoundsBackground'
 
 export default function Rounds() {
   return (
     <section className="rounds-zone" id="rounds">
+      <RoundsBackground />
       <div className="wrap">
         <div className="section-head">
           <h2>The Rounds</h2>
