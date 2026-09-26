@@ -478,9 +478,6 @@ function Game({
                   Level {info.level} · {info.title}
                 </h2>
                 <p className="dg-muted">{info.intro}</p>
-                <p className="dg-small">
-                  Each message is a fresh start: the dragon doesn't remember earlier messages.
-                </p>
               </div>
 
               <div className="dg-log" aria-live="polite">
@@ -500,6 +497,10 @@ function Game({
                 <p className="dg-ok">✅ You beat this level.</p>
               ) : (
                 <>
+                  <p className="dg-rule">
+                    🐉 Dragons forget everything between messages, so each message has to work on its own.
+                    Found the password? Type it in the box below.
+                  </p>
                   <form className="dg-compose" onSubmit={send}>
                     <label htmlFor="dg-msg" className="sr-only">
                       Message to the dragon
